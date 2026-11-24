@@ -277,6 +277,7 @@ void DkNoMacs::createActions()
     connect(am.action(DkActionManager::sort_file_size), &QAction::triggered, this, &DkNoMacs::changeSorting);
     connect(am.action(DkActionManager::sort_date_created), &QAction::triggered, this, &DkNoMacs::changeSorting);
     connect(am.action(DkActionManager::sort_date_modified), &QAction::triggered, this, &DkNoMacs::changeSorting);
+    connect(am.action(DkActionManager::sort_from_finder), &QAction::triggered, this, &DkNoMacs::setSortFromFinder);
     connect(am.action(DkActionManager::sort_random), &QAction::triggered, this, &DkNoMacs::changeSorting);
     connect(am.action(DkActionManager::sort_ascending), &QAction::triggered, this, &DkNoMacs::changeSorting);
     connect(am.action(DkActionManager::sort_descending), &QAction::triggered, this, &DkNoMacs::changeSorting);
@@ -1374,14 +1375,18 @@ void DkNoMacs::changeSorting(bool change)
             getTabWidget()->getCurrentImageLoader()->sort();
     }
 
-    QVector<QAction *> sortActions = DkActionManager::instance().sortActions();
-    for (int idx = 0; idx < sortActions.size(); idx++) {
-        if (idx < DkActionManager::sort_ascending)
-            sortActions[idx]->setChecked(idx == DkSettingsManager::param().global().sortMode);
-        else if (idx >= DkActionManager::sort_ascending)
-            sortActions[idx]->setChecked(idx - DkActionManager::sort_ascending
-                                         == DkSettingsManager::param().global().sortDir);
-    }
+    DkActionManager::instance().updateSortActions();
+}
+
+void DkNoMacs::setSortFromFinder(bool fromFinder)
+{
+    DkSettingsManager::param().global().sortFromFinder = fromFinder;
+
+    auto loader = getTabWidget()->getCurrentImageLoader();
+    if (fromFinder && loader && loader->applyFinderSortOrder())
+        loader->sort();
+
+    DkActionManager::instance().updateSortActions();
 }
 
 void DkNoMacs::goTo()

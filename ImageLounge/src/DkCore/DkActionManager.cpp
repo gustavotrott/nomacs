@@ -460,8 +460,26 @@ QMenu *DkActionManager::createSortMenu(QWidget *parent)
     mSortMenu->addSeparator();
     mSortMenu->addAction(mSortActions[sort_ascending]);
     mSortMenu->addAction(mSortActions[sort_descending]);
+#ifdef Q_OS_MACOS
+    mSortMenu->addSeparator();
+    mSortMenu->addAction(mSortActions[sort_from_finder]);
+#endif
 
     return mSortMenu;
+}
+
+void DkActionManager::updateSortActions() const
+{
+    const auto &global = DkSettingsManager::param().global();
+
+    for (int idx = 0; idx < mSortActions.size(); idx++) {
+        if (idx < sort_ascending)
+            mSortActions[idx]->setChecked(idx == global.sortMode);
+        else if (idx <= sort_descending)
+            mSortActions[idx]->setChecked(idx - sort_ascending == global.sortDir);
+        else if (idx == sort_from_finder)
+            mSortActions[idx]->setChecked(global.sortFromFinder);
+    }
 }
 
 QMenu *DkActionManager::createViewMenu(QWidget *parent /* = 0 */)
@@ -999,6 +1017,17 @@ void DkActionManager::createActions(QWidget *parent)
                              QObject::tr("Sort in Descending Order"),
                              no_shortcut,
                              sortDir == Qt::DescendingOrder);
+
+    sortActions.addCheckable(sort_from_finder,
+                             "sort_from_finder",
+                             no_icon,
+                             QObject::tr("Use &Finder Sort Order"),
+                             QObject::tr("Sort like the folder is sorted in Finder"),
+                             no_shortcut,
+                             DkSettingsManager::param().global().sortFromFinder);
+#ifndef Q_OS_MACOS
+    mSortActions[sort_from_finder]->setVisible(false);
+#endif
 
     DkActionBuilder<EditAction> editActions(mEditActions, numEditActions, parent);
 

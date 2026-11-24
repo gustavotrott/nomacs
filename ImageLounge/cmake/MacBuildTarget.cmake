@@ -98,6 +98,9 @@ target_link_libraries(
 
 target_link_libraries(${DLL_CORE_NAME} KDAB::kdsingleapplication)
 
+# CoreFoundation: read Finder sort settings (DkFinderSort)
+target_link_libraries(${DLL_CORE_NAME} "-framework CoreFoundation")
+
 # core flags
 file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/libs) # just create that it exists and we get no warning from linker
 set_target_properties(${DLL_CORE_NAME} PROPERTIES ARCHIVE_OUTPUT_DIRECTORY_DEBUG ${CMAKE_CURRENT_BINARY_DIR}/libs)

@@ -29,6 +29,7 @@
 
 #include "DkActionManager.h"
 #include "DkDialog.h"
+#include "DkFinderSort.h"
 #include "DkImageStorage.h"
 #include "DkMessageBox.h"
 #include "DkMetaData.h"
@@ -138,6 +139,9 @@ bool DkImageLoader::loadDir(const QString &newDirPath, bool scanRecursive)
         updated = true;
         mCurrentDir = newDirPath;
         mFolderFilterString.clear(); // delete keywords -> otherwise user may be confused
+
+        if (DkSettingsManager::param().global().sortFromFinder)
+            applyFinderSortOrder();
 
         DkFileInfoList files;
         if (scanRecursive && DkSettingsManager::param().global().scanSubFolders) {
@@ -1805,6 +1809,27 @@ void DkImageLoader::sortImages()
     std::sort(mImages.begin(), mImages.end(), cmp);
     if (!ascending)
         std::reverse(mImages.begin(), mImages.end());
+}
+
+/**
+ * Adopts the sort order the Finder uses for the current folder (macOS only).
+ * @return true if the sort settings changed
+ **/
+bool DkImageLoader::applyFinderSortOrder()
+{
+    const auto order = finderSortOrder(mCurrentDir);
+    if (!order)
+        return false;
+
+    auto &global = DkSettingsManager::param().global();
+    if (global.sortMode == order->sortMode && global.sortDir == order->sortDir)
+        return false;
+
+    global.sortMode = order->sortMode;
+    global.sortDir = order->sortDir;
+    DkActionManager::instance().updateSortActions();
+
+    return true;
 }
 
 void DkImageLoader::sort()

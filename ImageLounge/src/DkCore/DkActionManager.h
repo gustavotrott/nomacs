@@ -244,6 +244,7 @@ public:
         sort_random,
         sort_ascending,
         sort_descending,
+        sort_from_finder,
 
         numSortActions,
     };
@@ -652,6 +653,7 @@ public:
     {
         return mSortActions;
     }
+    void updateSortActions() const;
 
     QVector<QAction *> openWithActions() const;
 
