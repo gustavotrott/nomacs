@@ -217,7 +217,7 @@ macro(NMC_BUNDLE_COPY_PLUGINS)
 
     # naming convention for plugins output is "libxxx.dylib"
     set(PLUGINS_FILES "")
-    foreach(plugin_target ${PLUGINS_TARGETS})
+    foreach(plugin_target ${PLUGIN_TARGETS})
         list(APPEND PLUGINS_FILES "${CMAKE_CURRENT_BINARY_DIR}/nomacs-plugins/lib${plugin_target}.dylib")
     endforeach()
 
@@ -233,7 +233,7 @@ macro(NMC_BUNDLE_COPY_PLUGINS)
     add_dependencies(copy_bundle_plugins ${BINARY_NAME})
     add_dependencies(copy_bundle_plugins ${DLL_CORE_NAME})
 
-    foreach(plugin_target ${PLUGINS_TARGETS})
+    foreach(plugin_target ${PLUGIN_TARGETS})
         add_dependencies(copy_bundle_plugins ${plugin_target})
 
         # this works but also copies symlinks, so we have the following workaround
