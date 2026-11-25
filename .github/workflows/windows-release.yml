@@ -1,11 +1,8 @@
 name: Windows build (fork)
 
 on:
-  workflow_dispatch:
-    inputs:
-      ref:
-        description: branch to build
-        default: feat/finder-sort-order
+  push:
+    branches: [ci/windows-build]
 
 jobs:
   build:
@@ -22,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: ${{ inputs.ref }}
+          ref: feat/finder-sort-order
       - uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.msystem }}
