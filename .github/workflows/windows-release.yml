@@ -1,0 +1,66 @@
+name: Windows build (fork)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: branch to build
+        default: feat/finder-sort-order
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: windows-latest, msystem: CLANG64, arch: x64 }
+          - { runner: windows-11-arm, msystem: CLANGARM64, arch: arm64 }
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          pacboy: >-
+            toolchain:p cmake:p ninja:p pkgconf:p qt6-base:p qt6-svg:p qt6-tools:p
+            qt6-imageformats:p exiv2:p libraw:p opencv:p libtiff:p kdsingleapplication:p ntldd:p
+          install: zip
+      - name: Build
+        run: |
+          cmake -S ImageLounge -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_PLUGINS=OFF
+          cmake --build build
+      - name: Package
+        run: |
+          PKG=nomacs-windows-${{ matrix.arch }}
+          mkdir -p $PKG/translations
+          cp build/nomacs.exe build/*.dll $PKG/
+          cp -r build/themes $PKG/
+          cp build/*.qm $PKG/translations/ 2>/dev/null || true
+          windeployqt6 --release --no-compiler-runtime --no-translations --dir $PKG $PKG/nomacs.exe
+          # copy all non-system DLLs the binaries depend on (repeat until nothing new)
+          for pass in 1 2 3 4 5; do
+            for f in $PKG/*.exe $PKG/*.dll $PKG/*/*.dll; do
+              ntldd -R "$f" 2>/dev/null | grep -i "$MSYSTEM_PREFIX" | sed -E 's/.*=> (.*\.dll).*/\1/' | while read -r dll; do
+                d=$(cygpath -u "$dll"); [ -f "$PKG/$(basename "$d")" ] || cp "$d" $PKG/
+              done
+            done
+          done
+          ls $PKG | head -100
+          zip -qr $PKG.zip $PKG
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          $p = Start-Process nomacs-windows-${{ matrix.arch }}\nomacs.exe -PassThru
+          Start-Sleep 10
+          if ($p.HasExited) { throw "nomacs exited with $($p.ExitCode)" }
+          Stop-Process $p
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nomacs-windows-${{ matrix.arch }}
+          path: nomacs-windows-${{ matrix.arch }}.zip
