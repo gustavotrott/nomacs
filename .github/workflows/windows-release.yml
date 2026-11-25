@@ -34,6 +34,7 @@ jobs:
           cmake --build build
       - name: Package
         run: |
+          set +e +o pipefail
           PKG=nomacs-windows-${{ matrix.arch }}
           mkdir -p $PKG/translations
           cp build/nomacs.exe build/*.dll $PKG/
@@ -49,7 +50,8 @@ jobs:
             done
           done
           ls $PKG | head -100
-          zip -qr $PKG.zip $PKG
+          zip -qr $PKG.zip $PKG || exit 1
+          ls $PKG/*.dll | wc -l
       - name: Smoke test
         shell: pwsh
         run: |
