@@ -52,7 +52,9 @@ jobs:
           ls $PKG | head -100
           zip -qr $PKG.zip $PKG || exit 1
           ls $PKG/*.dll | wc -l
-          ntldd -R $PKG/nomacs.exe | grep -i "not found" | grep -viE "(api|ext)-ms-" && exit 1
+          # direct imports of everything we ship must resolve (system DLLs are found in System32)
+          (cd $PKG && for f in *.exe *.dll */*.dll; do ntldd "$f" | grep -i "not found" | grep -viE "(api|ext)-ms-" | sed "s|^|$f: |"; done) > missing.txt
+          cat missing.txt; [ -s missing.txt ] && exit 1
           ls $PKG/libexiv2*.dll $PKG/libopencv_core*.dll $PKG/libraw*.dll || exit 1
       - name: Smoke test
         shell: pwsh
