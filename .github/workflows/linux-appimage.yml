@@ -1,0 +1,53 @@
+name: Linux AppImage (fork)
+
+on:
+  push:
+    branches: [ci/windows-build]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: ubuntu-24.04, arch: x86_64 }
+          - { runner: ubuntu-24.04-arm, arch: aarch64 }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: feat/finder-sort-order
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libexiv2-dev libraw-dev libopencv-dev cmake libtiff-dev build-essential ninja-build \
+            libgtest-dev qt6-tools-dev-tools qt6-base-dev qt6-tools-dev libqt6svg6-dev qt6-image-formats-plugins \
+            libgl-dev qt6-l10n-tools libglib2.0-dev pkg-config libquazip1-qt6-dev qt6-wayland
+      - name: Install linuxdeploy
+        run: |
+          cd /tmp && bash ${GITHUB_WORKSPACE}/scripts/build-linuxdeploy.sh > linuxdeploy.log 2>&1 || { tail -50 linuxdeploy.log; exit 1; }
+          linuxdeploy --list-plugins
+      - name: Build
+        run: |
+          cmake -S ImageLounge -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DENABLE_QUAZIP=ON
+          cmake --build build
+      - name: Test
+        run: cmake --build build --target check
+      - name: AppImage
+        run: |
+          cd build
+          ninja appimage
+          SHA=$(git rev-parse --short HEAD)
+          VERSION=$(grep NOMACS_VERSION_STR DkVersion.h | sed 's/[^0-9\.]*//g')
+          mv -v nomacs*.AppImage "${GITHUB_WORKSPACE}/nomacs-${VERSION}-${SHA}-linux-${{ matrix.arch }}.AppImage"
+      - name: Smoke test
+        run: |
+          sudo apt-get install -y xvfb
+          f=$(ls nomacs-*.AppImage); chmod +x $f
+          APPIMAGE_EXTRACT_AND_RUN=1 QT_FORCE_STDERR_LOGGING=1 timeout 20 xvfb-run -a ./$f --new-instance ImageLounge/nomacs.svg > smoke.log 2>&1 || true
+          cat smoke.log | tail -20
+          grep -q "Initialization takes" smoke.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nomacs-linux-${{ matrix.arch }}
+          path: nomacs-*.AppImage
