@@ -44,7 +44,7 @@ jobs:
           # copy all non-system DLLs the binaries depend on (repeat until nothing new)
           for pass in 1 2 3 4 5; do
             for f in $PKG/*.exe $PKG/*.dll $PKG/*/*.dll; do
-              ntldd -R "$f" 2>/dev/null | grep -i "$MSYSTEM_PREFIX" | sed -E 's/.*=> (.*\.dll).*/\1/' | while read -r dll; do
+              ntldd -R "$f" 2>/dev/null | grep -iE '(clang64|clangarm64)[\\/]bin' | sed -E 's/.*=> (.*\.dll).*/\1/I' | while read -r dll; do
                 d=$(cygpath -u "$dll"); [ -f "$PKG/$(basename "$d")" ] || cp "$d" $PKG/
               done
             done
@@ -52,12 +52,16 @@ jobs:
           ls $PKG | head -100
           zip -qr $PKG.zip $PKG || exit 1
           ls $PKG/*.dll | wc -l
+          ntldd -R $PKG/nomacs.exe | grep -i "not found" && exit 1
+          ls $PKG/libexiv2*.dll $PKG/libopencv_core*.dll $PKG/libraw*.dll || exit 1
       - name: Smoke test
         shell: pwsh
         run: |
           $p = Start-Process nomacs-windows-${{ matrix.arch }}\nomacs.exe -PassThru
           Start-Sleep 10
+          $p.Refresh()
           if ($p.HasExited) { throw "nomacs exited with $($p.ExitCode)" }
+          if ($p.MainWindowTitle -notmatch 'nomacs') { throw "no nomacs window, title: '$($p.MainWindowTitle)'" }
           Stop-Process $p
       - uses: actions/upload-artifact@v4
         with:
