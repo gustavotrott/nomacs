@@ -29,7 +29,7 @@
 
 #include "DkActionManager.h"
 #include "DkDialog.h"
-#include "DkFinderSort.h"
+#include "DkFileManagerSort.h"
 #include "DkImageStorage.h"
 #include "DkMessageBox.h"
 #include "DkMetaData.h"
@@ -140,8 +140,8 @@ bool DkImageLoader::loadDir(const QString &newDirPath, bool scanRecursive)
         mCurrentDir = newDirPath;
         mFolderFilterString.clear(); // delete keywords -> otherwise user may be confused
 
-        if (DkSettingsManager::param().global().sortFromFinder)
-            applyFinderSortOrder();
+        if (DkSettingsManager::param().global().sortFromFileManager)
+            applyFileManagerSortOrder();
 
         DkFileInfoList files;
         if (scanRecursive && DkSettingsManager::param().global().scanSubFolders) {
@@ -1812,21 +1812,31 @@ void DkImageLoader::sortImages()
 }
 
 /**
- * Adopts the sort order the Finder uses for the current folder (macOS only).
+ * Adopts the sort order the file manager (Finder, Explorer, ...) uses for the current folder.
+ * If the file manager sorts by something nomacs cannot, the current order is kept and the user is told so.
  * @return true if the sort settings changed
  **/
-bool DkImageLoader::applyFinderSortOrder()
+bool DkImageLoader::applyFileManagerSortOrder()
 {
-    const auto order = finderSortOrder(mCurrentDir);
-    if (!order)
+    const DkFileManagerSortOrder order = fileManagerSortOrder(mCurrentDir);
+
+    if (order.status == DkFileManagerSortOrder::unsupported) {
+        emit showInfoSignal(tr("%1 sorts this folder by \"%2\", which is not supported.\nThe current sort order is "
+                               "kept.")
+                                .arg(order.fileManager, order.sortKey),
+                            4000);
+        return false;
+    }
+
+    if (order.status != DkFileManagerSortOrder::found)
         return false;
 
     auto &global = DkSettingsManager::param().global();
-    if (global.sortMode == order->sortMode && global.sortDir == order->sortDir)
+    if (global.sortMode == order.sortMode && global.sortDir == order.sortDir)
         return false;
 
-    global.sortMode = order->sortMode;
-    global.sortDir = order->sortDir;
+    global.sortMode = order.sortMode;
+    global.sortDir = order.sortDir;
     DkActionManager::instance().updateSortActions();
 
     return true;

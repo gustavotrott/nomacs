@@ -1,5 +1,5 @@
 /*******************************************************************************************************
- DkFinderSort.cpp
+ DkFileManagerSortMac.cpp
  Created on:	24.11.2026
 
  nomacs is a fast and small image viewer with the capability of synchronizing multiple instances
@@ -23,11 +23,9 @@
 
  *******************************************************************************************************/
 
-#include "DkFinderSort.h"
+#include "DkFileManagerSort.h"
 
 #ifdef Q_OS_MACOS
-
-#include "DkSettings.h"
 
 #include <QDebug>
 #include <QDir>
@@ -215,7 +213,7 @@ private:
             dataLen = qsizetype(len) * 2;
             pos += 4;
         } else {
-            qWarning() << "[DkFinderSort] unknown .DS_Store record type" << type;
+            qWarning() << "[DkFileManagerSort] unknown .DS_Store record type" << type;
             return false;
         }
 
@@ -295,7 +293,10 @@ std::optional<bool> toBool(CFTypeRef val)
  * Translates a Finder sort key ("arrangeBy" or "sortColumn") to nomacs.
  * The direction is the Finder default for that key unless given by ascending.
  **/
-std::optional<DkFinderSortOrder> toSortOrder(const QString &key, std::optional<bool> ascending = {})
+using Order = DkFileManagerSortOrder;
+const QString finder = QStringLiteral("Finder");
+
+Order toSortOrder(const QString &key, std::optional<bool> ascending = {})
 {
     int mode;
     bool defaultAscending = false; // Finder shows newest/biggest first
@@ -311,18 +312,17 @@ std::optional<DkFinderSortOrder> toSortOrder(const QString &key, std::optional<b
         mode = DkSettings::sort_file_size;
     } else {
         // kind, dateAdded, dateLastOpened, label, ... have no nomacs equivalent
-        return {};
+        return Order::makeUnsupported(finder, key);
     }
 
-    const bool asc = ascending.value_or(defaultAscending);
-    return DkFinderSortOrder{mode, asc ? DkSettings::sort_ascending : DkSettings::sort_descending};
+    return Order::make(finder, key, mode, ascending.value_or(defaultAscending));
 }
 
 /**
  * Sort order of Finder list view settings. The column list is either an array (lsvC, Finder defaults)
  * or a dictionary keyed by column identifier (lsvp, lsvP).
  **/
-std::optional<DkFinderSortOrder> listViewSortOrder(CFTypeRef settings)
+Order listViewSortOrder(CFTypeRef settings)
 {
     const QString column = toQString(dictValue(settings, "sortColumn"));
     if (column.isEmpty())
@@ -347,7 +347,7 @@ std::optional<DkFinderSortOrder> listViewSortOrder(CFTypeRef settings)
     return toSortOrder(column, ascending);
 }
 
-std::optional<DkFinderSortOrder> arrangeSortOrder(CFTypeRef settings)
+Order arrangeSortOrder(CFTypeRef settings)
 {
     const QString key = toQString(dictValue(settings, "arrangeBy"));
     if (key.isEmpty())
@@ -389,12 +389,13 @@ std::optional<ViewStyle> toViewStyle(const QByteArray &code)
 /**
  * Sort order from the records of a folder in a .DS_Store
  **/
-std::optional<DkFinderSortOrder> recordSortOrder(const DsRecords &records, ViewStyle style)
+Order recordSortOrder(const DsRecords &records, ViewStyle style)
 {
     if (style == ViewStyle::list) {
         for (const char *code : {"lsvC", "lsvP", "lsvp"}) {
             CfRef<CFPropertyListRef> plist(parsePlist(records.value(code)));
-            if (auto order = listViewSortOrder(plist.get()))
+            Order order = listViewSortOrder(plist.get());
+            if (order.status != Order::not_found)
                 return order;
         }
         return {};
@@ -408,7 +409,7 @@ std::optional<DkFinderSortOrder> recordSortOrder(const DsRecords &records, ViewS
 /**
  * Sort order of Finder's default view settings (Finder > View > Show View Options > Use as Defaults)
  **/
-std::optional<DkFinderSortOrder> defaultSortOrder(ViewStyle style)
+Order defaultSortOrder(ViewStyle style)
 {
     CfRef<CFStringRef> app(cfString("com.apple.finder"));
     CfRef<CFStringRef> key(cfString("StandardViewSettings"));
@@ -417,7 +418,8 @@ std::optional<DkFinderSortOrder> defaultSortOrder(ViewStyle style)
     switch (style) {
     case ViewStyle::list:
         for (const char *name : {"ExtendedListViewSettingsV2", "ExtendedListViewSettings", "ListViewSettings"}) {
-            if (auto order = listViewSortOrder(dictValue(settings.get(), name)))
+            Order order = listViewSortOrder(dictValue(settings.get(), name));
+            if (order.status != Order::not_found)
                 return order;
         }
         return {};
@@ -452,7 +454,12 @@ DsRecords readRecords(const QString &dsStorePath, const QString &fileName)
 
 }
 
-std::optional<DkFinderSortOrder> finderSortOrder(const QString &dirPath)
+QString fileManagerName()
+{
+    return finder;
+}
+
+DkFileManagerSortOrder fileManagerSortOrder(const QString &dirPath)
 {
     const QFileInfo dirInfo(dirPath);
     if (!dirInfo.isDir())
@@ -471,26 +478,16 @@ std::optional<DkFinderSortOrder> finderSortOrder(const QString &dirPath)
 
     const ViewStyle style = toViewStyle(records.value("vstl")).value_or(defaultViewStyle());
 
-    auto order = recordSortOrder(records, style);
-    if (!order)
+    Order order = recordSortOrder(records, style);
+    if (order.status == Order::not_found)
         order = defaultSortOrder(style);
 
-    qInfo() << "[DkFinderSort]" << dir << "view style:" << int(style)
-            << "sort:" << (order ? QString("%1/%2").arg(order->sortMode).arg(order->sortDir) : QString("n/a"));
+    qInfo() << "[DkFileManagerSort]" << dir << "Finder view style:" << int(style) << "sort key:" << order.sortKey
+            << "status:" << order.status << "mode:" << order.sortMode << "dir:" << order.sortDir;
 
     return order;
 }
 
-}
-
-#else
-
-namespace nmc
-{
-std::optional<DkFinderSortOrder> finderSortOrder(const QString &)
-{
-    return {};
-}
 }
 
 #endif

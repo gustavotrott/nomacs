@@ -12,6 +12,16 @@ target_sources(${BINARY_NAME} PRIVATE ${NOMACS_QRC})
 target_link_libraries(${BINARY_NAME} shlwapi)
 target_link_libraries(${DLL_CORE_NAME} shlwapi)
 
+# Explorer sort order (DkFileManagerSortWin)
+target_link_libraries(
+    ${DLL_CORE_NAME}
+    ole32
+    oleaut32
+    shell32
+    propsys
+    uuid
+)
+
 set_target_properties(${BINARY_NAME} PROPERTIES LINK_FLAGS_DEBUG "-mconsole")
 set_target_properties(${DLL_CORE_NAME} PROPERTIES LINK_FLAGS_DEBUG "-mconsole")
 

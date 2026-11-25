@@ -297,7 +297,7 @@ public:
 
         int sortMode;
         int sortDir;
-        bool sortFromFinder; // macOS: use the sort order of the folder in Finder
+        bool sortFromFileManager; // use the sort order of the folder in the file manager (Finder, Explorer, ...)
         quint32 sortSeed;
         QString pluginsDir;
 

@@ -50,6 +50,7 @@ option(ENABLE_SANITIZE "Enable runtime sanitizers (slow, development only)" OFF)
 
 if(UNIX AND NOT APPLE)
     option(ENABLE_DBUS "Enable features using D-Bus" ON)
+    option(ENABLE_GIO "Read the folder sort order of GTK file managers (GIO)" ON)
 endif()
 
 # Codecov

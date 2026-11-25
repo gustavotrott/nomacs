@@ -277,7 +277,10 @@ void DkNoMacs::createActions()
     connect(am.action(DkActionManager::sort_file_size), &QAction::triggered, this, &DkNoMacs::changeSorting);
     connect(am.action(DkActionManager::sort_date_created), &QAction::triggered, this, &DkNoMacs::changeSorting);
     connect(am.action(DkActionManager::sort_date_modified), &QAction::triggered, this, &DkNoMacs::changeSorting);
-    connect(am.action(DkActionManager::sort_from_finder), &QAction::triggered, this, &DkNoMacs::setSortFromFinder);
+    connect(am.action(DkActionManager::sort_from_file_manager),
+            &QAction::triggered,
+            this,
+            &DkNoMacs::setSortFromFileManager);
     connect(am.action(DkActionManager::sort_random), &QAction::triggered, this, &DkNoMacs::changeSorting);
     connect(am.action(DkActionManager::sort_ascending), &QAction::triggered, this, &DkNoMacs::changeSorting);
     connect(am.action(DkActionManager::sort_descending), &QAction::triggered, this, &DkNoMacs::changeSorting);
@@ -1378,12 +1381,12 @@ void DkNoMacs::changeSorting(bool change)
     DkActionManager::instance().updateSortActions();
 }
 
-void DkNoMacs::setSortFromFinder(bool fromFinder)
+void DkNoMacs::setSortFromFileManager(bool fromFileManager)
 {
-    DkSettingsManager::param().global().sortFromFinder = fromFinder;
+    DkSettingsManager::param().global().sortFromFileManager = fromFileManager;
 
     auto loader = getTabWidget()->getCurrentImageLoader();
-    if (fromFinder && loader && loader->applyFinderSortOrder())
+    if (fromFileManager && loader && loader->applyFileManagerSortOrder())
         loader->sort();
 
     DkActionManager::instance().updateSortActions();

@@ -445,7 +445,7 @@ void DkSettings::load(QSettings &settings, bool defaults)
 
     global_p.sortMode = settings.value("sortMode", global_p.sortMode).toInt();
     global_p.sortDir = settings.value("sortDir", global_p.sortDir).toInt();
-    global_p.sortFromFinder = settings.value("sortFromFinder", global_p.sortFromFinder).toBool();
+    global_p.sortFromFileManager = settings.value("sortFromFileManager", global_p.sortFromFileManager).toBool();
     global_p.setupPath = settings.value("setupPath", global_p.setupPath).toString();
     global_p.setupVersion = settings.value("setupVersion", global_p.setupVersion).toString();
     global_p.zoomOnWheel = settings.value("zoomOnWheel", global_p.zoomOnWheel).toBool();
@@ -755,8 +755,8 @@ void DkSettings::save(QSettings &settings, bool force)
         settings.setValue("sortMode", global_p.sortMode);
     if (force || global_p.sortDir != global_d.sortDir)
         settings.setValue("sortDir", global_p.sortDir);
-    if (force || global_p.sortFromFinder != global_d.sortFromFinder)
-        settings.setValue("sortFromFinder", global_p.sortFromFinder);
+    if (force || global_p.sortFromFileManager != global_d.sortFromFileManager)
+        settings.setValue("sortFromFileManager", global_p.sortFromFileManager);
     if (force || global_p.setupPath != global_d.setupPath)
         settings.setValue("setupPath", global_p.setupPath);
     if (force || global_p.setupVersion != global_d.setupVersion)
@@ -1043,11 +1043,7 @@ void DkSettings::setToDefaultSettings()
     global_p.numThreads = -1;
     global_p.sortMode = sort_filename;
     global_p.sortDir = sort_ascending;
-#ifdef Q_OS_MACOS
-    global_p.sortFromFinder = true;
-#else
-    global_p.sortFromFinder = false;
-#endif
+    global_p.sortFromFileManager = true;
     global_p.sortSeed = QRandomGenerator::global()->generate();
     global_p.zoomOnWheel = true;
     global_p.horZoomSkips = true;

@@ -77,6 +77,10 @@ else()
     target_link_libraries(${DLL_CORE_NAME} KDAB::kdsingleapplication)
 endif()
 
+if(GIO_FOUND)
+    target_link_libraries(${DLL_CORE_NAME} PkgConfig::GIO)
+endif()
+
 if(QT_FEATURE_xcb)
     # We use xcb APIs if Qt was built with it
     message(STATUS "Qt was built with XCB support, requiring XCB libraries")

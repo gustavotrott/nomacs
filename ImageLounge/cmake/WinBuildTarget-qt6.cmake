@@ -74,6 +74,16 @@ target_sources(${DLL_CORE_NAME} PRIVATE src/utf8.manifest)
 
 target_link_libraries(${DLL_CORE_NAME} KDAB::kdsingleapplication)
 
+# Explorer sort order (DkFileManagerSortWin)
+target_link_libraries(
+    ${DLL_CORE_NAME}
+    ole32
+    oleaut32
+    shell32
+    shlwapi
+    propsys
+)
+
 # set(_moc ${CMAKE_CURRENT_BINARY_DIR}/GeneratedFiles)
 file(GLOB NOMACS_AUTOMOC "${CMAKE_BINARY_DIR}/*_automoc.cpp ${CMAKE_BINARY_DIR}/moc_.cpp")
 

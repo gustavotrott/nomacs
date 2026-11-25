@@ -118,7 +118,7 @@ public slots:
     void openFileList();
     void saveFileList();
     void changeSorting(bool change);
-    void setSortFromFinder(bool fromFinder);
+    void setSortFromFileManager(bool fromFileManager);
     void goTo();
     void find(bool filterAction = true);
     void extractImagesFromArchive();

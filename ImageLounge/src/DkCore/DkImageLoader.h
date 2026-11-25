@@ -71,7 +71,7 @@ public:
     void setImage(QSharedPointer<DkImageContainerT> img);
     void setCurrentImage(QSharedPointer<DkImageContainerT> newImg);
     void sort();
-    bool applyFinderSortOrder();
+    bool applyFileManagerSortOrder();
 
     // file selection
     void firstFile();

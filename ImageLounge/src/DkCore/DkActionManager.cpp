@@ -26,6 +26,7 @@
  *******************************************************************************************************/
 
 #include "DkActionManager.h"
+#include "DkFileManagerSort.h"
 
 #include "DkDialog.h"
 #include "DkImageStorage.h"
@@ -460,10 +461,8 @@ QMenu *DkActionManager::createSortMenu(QWidget *parent)
     mSortMenu->addSeparator();
     mSortMenu->addAction(mSortActions[sort_ascending]);
     mSortMenu->addAction(mSortActions[sort_descending]);
-#ifdef Q_OS_MACOS
     mSortMenu->addSeparator();
-    mSortMenu->addAction(mSortActions[sort_from_finder]);
-#endif
+    mSortMenu->addAction(mSortActions[sort_from_file_manager]);
 
     return mSortMenu;
 }
@@ -477,8 +476,8 @@ void DkActionManager::updateSortActions() const
             mSortActions[idx]->setChecked(idx == global.sortMode);
         else if (idx <= sort_descending)
             mSortActions[idx]->setChecked(idx - sort_ascending == global.sortDir);
-        else if (idx == sort_from_finder)
-            mSortActions[idx]->setChecked(global.sortFromFinder);
+        else if (idx == sort_from_file_manager)
+            mSortActions[idx]->setChecked(global.sortFromFileManager);
     }
 }
 
@@ -1018,16 +1017,15 @@ void DkActionManager::createActions(QWidget *parent)
                              no_shortcut,
                              sortDir == Qt::DescendingOrder);
 
-    sortActions.addCheckable(sort_from_finder,
-                             "sort_from_finder",
+    const QString fileManager = fileManagerName();
+    sortActions.addCheckable(sort_from_file_manager,
+                             "sort_from_file_manager",
                              no_icon,
-                             QObject::tr("Use &Finder Sort Order"),
-                             QObject::tr("Sort like the folder is sorted in Finder"),
+                             fileManager.isEmpty() ? QObject::tr("Use &File Manager Sort Order")
+                                                   : QObject::tr("Use &%1 Sort Order").arg(fileManager),
+                             QObject::tr("Sort like the folder is sorted in the file manager"),
                              no_shortcut,
-                             DkSettingsManager::param().global().sortFromFinder);
-#ifndef Q_OS_MACOS
-    mSortActions[sort_from_finder]->setVisible(false);
-#endif
+                             DkSettingsManager::param().global().sortFromFileManager);
 
     DkActionBuilder<EditAction> editActions(mEditActions, numEditActions, parent);
 

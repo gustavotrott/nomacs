@@ -244,7 +244,7 @@ public:
         sort_random,
         sort_ascending,
         sort_descending,
-        sort_from_finder,
+        sort_from_file_manager,
 
         numSortActions,
     };
